@@ -1,0 +1,48 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+
+    // Force every plugin module (not just our own app) onto the same Java/Kotlin
+    // target (17). Reading each module's own compileOptions.targetCompatibility
+    // dynamically threw "targetCompatibility is not yet finalized" (AGP's lazy
+    // property isn't resolved yet at this point in the build lifecycle), so we
+    // just set the same modern target everywhere instead - avoids any mismatch
+    // between Java and Kotlin compile targets within a module.
+    afterEvaluate { proj ->
+        if (proj.hasProperty("android")) {
+            proj.android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
+            proj.android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
+        }
+        if (proj.plugins.hasPlugin("org.jetbrains.kotlin.android")) {
+            proj.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                kotlinOptions {
+                    jvmTarget = "17"
+                }
+            }
+        }
+    }
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
