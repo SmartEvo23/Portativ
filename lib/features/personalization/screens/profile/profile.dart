@@ -5,6 +5,7 @@ import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../common/widgets/images/t_circular_image.dart';
 import '../../../../common/widgets/shimmers/shimmer.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
+import '../../../../data/repositories/authentication/authentication_repository.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
@@ -15,6 +16,16 @@ import '../../../lessons/models/progress_model.dart';
 import '../../controllers/user_controller.dart';
 import 'change_name.dart';
 import 'widgets/profile_menu.dart';
+
+const List<String> _kRomanianMonths = [
+  'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
+  'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
+];
+
+String _formatMemberSince(DateTime? date) {
+  if (date == null) return '-';
+  return '${_kRomanianMonths[date.month - 1]} ${date.year}';
+}
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -71,11 +82,14 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: TSizes.spaceBtwItems),
               const TSectionHeading(title: 'Informații Personale', showActionButton: false),
               const SizedBox(height: TSizes.spaceBtwItems),
-              TProfileMenu(onPressed: () {}, title: 'ID Utilizator', value: '45689', icon: Iconsax.copy),
-              TProfileMenu(onPressed: () {}, title: 'E-mail', value: controller.user.value.email),
-              TProfileMenu(onPressed: () {}, title: 'Număr Telefon', value: controller.user.value.phoneNumber),
-              TProfileMenu(onPressed: () {}, title: 'Gen', value: 'Bărbat'),
-              TProfileMenu(onPressed: () {}, title: 'Data Nașterii', value: '23 Iunie, 1994'),
+              TProfileMenu(onPressed: () {}, title: 'E-mail', value: controller.user.value.email, icon: Iconsax.direct),
+              TProfileMenu(onPressed: () {}, title: 'Număr Telefon', value: controller.user.value.phoneNumber, icon: Iconsax.mobile),
+              TProfileMenu(
+                onPressed: () {},
+                title: 'Membru din',
+                value: _formatMemberSince(AuthenticationRepository.instance.firebaseUser?.metadata.creationTime),
+                icon: Iconsax.calendar,
+              ),
               const Divider(),
               const SizedBox(height: TSizes.spaceBtwItems),
               Center(
@@ -91,9 +105,9 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-/// Rezumatul progresului la fiecare categorie de lecții, afișat în profil.
-/// Fiecare categorie e independentă: punctele și nivelul unei categorii nu
-/// sunt influențate de rezultatele din celelalte.
+/// Rezumatul progresului la fiecare categorie de lecții, afișat în profil ca
+/// insigne separate - fiecare categorie e independentă: punctele și nivelul
+/// unei categorii nu sunt influențate de rezultatele din celelalte.
 class _ProgressSummary extends StatelessWidget {
   const _ProgressSummary();
 
@@ -125,11 +139,13 @@ class _ProgressSummary extends StatelessWidget {
             ),
           ),
           const SizedBox(height: TSizes.spaceBtwItems),
-          ...LessonLevel.values.map(
-            (level) => Padding(
-              padding: const EdgeInsets.only(bottom: TSizes.spaceBtwItems),
-              child: _ProgressRow(level: level, levelProgress: progress.of(level)),
-            ),
+          Row(
+            children: [
+              for (final level in LessonLevel.values) ...[
+                Expanded(child: _ProgressBadge(level: level, levelProgress: progress.of(level))),
+                if (level != LessonLevel.values.last) const SizedBox(width: TSizes.sm),
+              ],
+            ],
           ),
         ],
       );
@@ -137,51 +153,68 @@ class _ProgressSummary extends StatelessWidget {
   }
 }
 
-class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.level, required this.levelProgress});
+class _ProgressBadge extends StatelessWidget {
+  const _ProgressBadge({required this.level, required this.levelProgress});
 
   final LessonLevel level;
   final LevelProgress levelProgress;
+
+  IconData get _icon {
+    switch (level) {
+      case LessonLevel.copii:
+        return Iconsax.star1;
+      case LessonLevel.elevi:
+        return Iconsax.edit;
+      case LessonLevel.hobby:
+        return Iconsax.heart;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final lessons = LessonsData.byLevel(level);
     final rank = ProgressRank.forPoints(levelProgress.points);
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(level.label, style: Theme.of(context).textTheme.bodyMedium),
-              Text('${rank.title} · Niv. ${rank.number}', style: Theme.of(context).textTheme.labelSmall),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: TSizes.md, horizontal: TSizes.sm),
+      decoration: BoxDecoration(
+        color: TColors.lightContainer,
+        borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
+      ),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: TColors.primary.withOpacity(0.12),
+            child: Icon(_icon, color: TColors.primary),
           ),
-        ),
-        Expanded(
-          flex: 4,
-          child: ClipRRect(
+          const SizedBox(height: TSizes.sm),
+          Text(level.label, style: Theme.of(context).textTheme.labelLarge, textAlign: TextAlign.center),
+          const SizedBox(height: 2),
+          Text(
+            rank.title,
+            style: Theme.of(context).textTheme.labelSmall!.apply(color: TColors.primary),
+            textAlign: TextAlign.center,
+          ),
+          Text('Nivel ${rank.number}', style: Theme.of(context).textTheme.labelSmall, textAlign: TextAlign.center),
+          const SizedBox(height: TSizes.xs),
+          ClipRRect(
             borderRadius: BorderRadius.circular(TSizes.sm),
             child: LinearProgressIndicator(
               value: rank.progress,
-              minHeight: 6,
+              minHeight: 5,
               backgroundColor: TColors.borderPrimary,
               valueColor: const AlwaysStoppedAnimation(TColors.primary),
             ),
           ),
-        ),
-        const SizedBox(width: TSizes.sm),
-        Expanded(
-          flex: 2,
-          child: Text(
+          const SizedBox(height: TSizes.xs),
+          Text(
             '${levelProgress.lessonsCompletedCount}/${lessons.length} lecții',
-            textAlign: TextAlign.end,
             style: Theme.of(context).textTheme.labelSmall,
+            textAlign: TextAlign.center,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
