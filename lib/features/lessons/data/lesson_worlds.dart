@@ -30,7 +30,11 @@ class LessonWorld {
   final MascotInstrument companionInstrument;
 }
 
-/// Lumile aventurii pentru categoria "Copii", câte una pentru fiecare modul.
+/// Tărâmurile/lumile hărților de lecții, câte una pentru fiecare modul -
+/// folosite pentru decorul hărților de la toate cele 3 categorii (Copii,
+/// Elevi, Hobby). Poveștile (tagline/story) sunt folosite doar la Copii
+/// (dialogul de introducere într-o lume nouă); celelalte categorii refolosesc
+/// doar titlul, gradientul și stilul mascotelor-companion.
 const List<LessonWorld> kKidsWorlds = [
   LessonWorld(
     module: LessonModule.teorieDeBaza,
@@ -78,6 +82,18 @@ const List<LessonWorld> kKidsWorlds = [
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFF4DD0E1),
     companionInstrument: MascotInstrument.microphone,
+  ),
+  LessonWorld(
+    module: LessonModule.armonie,
+    title: 'Turnul Armoniei',
+    tagline: 'Acorduri și culori muzicale avansate',
+    story:
+        'Ai urcat în Turnul Armoniei! Aici sunetele se combină în acorduri bogate, ca niște culori care se amestecă '
+        'perfect. E locul celor mai avansați exploratori muzicali!',
+    gradient: [Color(0xFFFFE082), Color(0xFFFFB300)],
+    companionVariant: MascotVariant.musician,
+    companionColor: Color(0xFFFFC107),
+    companionInstrument: MascotInstrument.tambourine,
   ),
 ];
 
