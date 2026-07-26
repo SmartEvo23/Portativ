@@ -13,7 +13,10 @@ class ExerciseQuiz extends StatefulWidget {
   const ExerciseQuiz({super.key, required this.exercises, required this.onFinished});
 
   final List<ExerciseModel> exercises;
-  final VoidCallback onFinished;
+
+  /// Apelat când chestionarul se termină (fie normal, fie prin ieșire timpurie),
+  /// cu lista răspunsurilor date, în ordine (true = corect).
+  final void Function(List<bool> correctness) onFinished;
 
   @override
   State<ExerciseQuiz> createState() => _ExerciseQuizState();
@@ -23,6 +26,7 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
   int _index = 0;
   int _score = 0;
   int? _selectedOption;
+  final List<bool> _correctness = [];
 
   ExerciseModel get _current => widget.exercises[_index];
 
@@ -30,7 +34,9 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
     if (_selectedOption != null) return;
     setState(() {
       _selectedOption = optionIndex;
-      if (_current.options[optionIndex].isCorrect) _score++;
+      final isCorrect = _current.options[optionIndex].isCorrect;
+      if (isCorrect) _score++;
+      _correctness.add(isCorrect);
     });
   }
 
@@ -45,6 +51,8 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
     });
   }
 
+  void _finish() => widget.onFinished(List<bool>.from(_correctness));
+
   void _showSummary() {
     showDialog(
       context: context,
@@ -56,7 +64,7 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              widget.onFinished();
+              _finish();
             },
             child: const Text('Închide'),
           ),
@@ -79,7 +87,7 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Exercițiul ${_index + 1}/${widget.exercises.length}', style: Theme.of(context).textTheme.labelLarge),
-              IconButton(onPressed: widget.onFinished, icon: const Icon(Iconsax.close_circle)),
+              IconButton(onPressed: _finish, icon: const Icon(Iconsax.close_circle)),
             ],
           ),
           const SizedBox(height: TSizes.spaceBtwItems),

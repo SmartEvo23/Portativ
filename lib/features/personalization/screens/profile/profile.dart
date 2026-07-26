@@ -5,8 +5,13 @@ import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../common/widgets/images/t_circular_image.dart';
 import '../../../../common/widgets/shimmers/shimmer.dart';
 import '../../../../common/widgets/texts/section_heading.dart';
+import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/image_strings.dart';
 import '../../../../utils/constants/sizes.dart';
+import '../../../lessons/controllers/progress_controller.dart';
+import '../../../lessons/data/lessons_data.dart';
+import '../../../lessons/models/lesson_level.dart';
+import '../../../lessons/models/progress_model.dart';
 import '../../controllers/user_controller.dart';
 import 'change_name.dart';
 import 'widgets/profile_menu.dart';
@@ -51,6 +56,12 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: TSizes.spaceBtwItems / 2),
               const Divider(),
               const SizedBox(height: TSizes.spaceBtwItems),
+              const TSectionHeading(title: 'Progresul tău', showActionButton: false),
+              const SizedBox(height: TSizes.spaceBtwItems),
+              const _ProgressSummary(),
+              const SizedBox(height: TSizes.spaceBtwItems),
+              const Divider(),
+              const SizedBox(height: TSizes.spaceBtwItems),
               const TSectionHeading(title: 'Informații Profil', showActionButton: false),
               const SizedBox(height: TSizes.spaceBtwItems),
               TProfileMenu(onPressed: () => Get.to(() => const ChangeName()), title: 'Nume', value: controller.user.value.fullName),
@@ -76,6 +87,101 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Rezumatul progresului la fiecare categorie de lecții, afișat în profil.
+/// Fiecare categorie e independentă: punctele și nivelul unei categorii nu
+/// sunt influențate de rezultatele din celelalte.
+class _ProgressSummary extends StatelessWidget {
+  const _ProgressSummary();
+
+  @override
+  Widget build(BuildContext context) {
+    final progressController = Get.put(ProgressController());
+    return Obx(() {
+      final progress = progressController.progress.value;
+      final totalPoints = LessonLevel.values.fold<int>(0, (sum, level) => sum + progress.of(level).points);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(TSizes.md),
+            decoration: BoxDecoration(
+              color: TColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
+            ),
+            child: Row(
+              children: [
+                const Icon(Iconsax.star1, color: TColors.primary),
+                const SizedBox(width: TSizes.sm),
+                Expanded(
+                  child: Text('$totalPoints puncte adunate în total', style: Theme.of(context).textTheme.titleSmall),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: TSizes.spaceBtwItems),
+          ...LessonLevel.values.map(
+            (level) => Padding(
+              padding: const EdgeInsets.only(bottom: TSizes.spaceBtwItems),
+              child: _ProgressRow(level: level, levelProgress: progress.of(level)),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+class _ProgressRow extends StatelessWidget {
+  const _ProgressRow({required this.level, required this.levelProgress});
+
+  final LessonLevel level;
+  final LevelProgress levelProgress;
+
+  @override
+  Widget build(BuildContext context) {
+    final lessons = LessonsData.byLevel(level);
+    final rank = ProgressRank.forPoints(levelProgress.points);
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(level.label, style: Theme.of(context).textTheme.bodyMedium),
+              Text('${rank.title} · Niv. ${rank.number}', style: Theme.of(context).textTheme.labelSmall),
+            ],
+          ),
+        ),
+        Expanded(
+          flex: 4,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(TSizes.sm),
+            child: LinearProgressIndicator(
+              value: rank.progress,
+              minHeight: 6,
+              backgroundColor: TColors.borderPrimary,
+              valueColor: const AlwaysStoppedAnimation(TColors.primary),
+            ),
+          ),
+        ),
+        const SizedBox(width: TSizes.sm),
+        Expanded(
+          flex: 2,
+          child: Text(
+            '${levelProgress.lessonsCompletedCount}/${lessons.length} lecții',
+            textAlign: TextAlign.end,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ),
+      ],
     );
   }
 }

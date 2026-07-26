@@ -68,6 +68,26 @@ class UserRepository extends GetxController {
     }
   }
 
+  /// Function to fetch the user's learning progress (per category) from Firestore.
+  Future<Map<String, dynamic>?> fetchProgress() async {
+    try {
+      final documentSnapshot = await _db.collection("Users").doc(AuthenticationRepository.instance.getUserID).get();
+      if (documentSnapshot.exists) {
+        final data = documentSnapshot.data();
+        return data?['Progress'] as Map<String, dynamic>?;
+      }
+      return null;
+    } on FirebaseException catch (e) {
+      throw TFirebaseException(e.code).message;
+    } on FormatException catch (_) {
+      throw const TFormatException();
+    } on PlatformException catch (e) {
+      throw TPlatformException(e.code).message;
+    } catch (e) {
+      throw 'Something went wrong. Please try again';
+    }
+  }
+
   /// Update any field in specific Users Collection
   Future<void> updateSingleField(Map<String, dynamic> json) async {
     try {

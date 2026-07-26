@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../common/widgets/appbar/appbar.dart';
 import '../../../../common/widgets/music/staff_widget.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
+import '../../controllers/progress_controller.dart';
 import '../../data/lessons_data.dart';
 import '../../models/exercise_model.dart';
 import '../../models/lesson_model.dart';
@@ -23,6 +25,22 @@ class LessonDetailScreen extends StatefulWidget {
 class _LessonDetailScreenState extends State<LessonDetailScreen> {
   late final LessonModel lesson = LessonsData.byId(widget.lessonId);
   bool _showExercises = false;
+  late final ProgressController _progress = Get.put(ProgressController());
+
+  @override
+  void initState() {
+    super.initState();
+    if (lesson.exercises.isEmpty) {
+      // Lecțiile fără exerciții se consideră finalizate imediat ce sunt citite.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _progress.markLessonCompleted(lesson.level, lesson.id));
+    }
+  }
+
+  void _onQuizFinished(List<bool> correctness) {
+    final correct = correctness.where((c) => c).length;
+    _progress.recordLessonQuizResult(lesson.level, lesson.id, correct, lesson.exercises.length);
+    setState(() => _showExercises = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +50,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         child: _showExercises && lesson.exercises.isNotEmpty
             ? ExerciseQuiz(
                 exercises: lesson.exercises,
-                onFinished: () => setState(() => _showExercises = false),
+                onFinished: _onQuizFinished,
               )
             : _LessonContent(
                 lesson: lesson,
