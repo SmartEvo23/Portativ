@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/constants/text_strings.dart';
 import '../../../../../utils/validators/validation.dart';
@@ -62,10 +63,17 @@ class TSignupForm extends StatelessWidget {
           const SizedBox(height: TSizes.spaceBtwInputFields),
 
           /// Phone Number
-          TextFormField(
-            controller: controller.phoneNumber,
-            validator: TValidator.validatePhoneNumber,
-            decoration: const InputDecoration(labelText: TTexts.phoneNo, prefixIcon: Icon(Iconsax.call)),
+          IntlPhoneField(
+            initialCountryCode: 'RO',
+            decoration: const InputDecoration(labelText: TTexts.phoneNo),
+            dropdownIconPosition: IconPosition.leading,
+            onChanged: (phone) => controller.phoneNumber.text = phone.completeNumber,
+            validator: (phone) {
+              if (phone == null || phone.number.trim().isEmpty) {
+                return 'Phone number is required.';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: TSizes.spaceBtwInputFields),
 

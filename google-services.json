@@ -12,7 +12,20 @@
           "package_name": "com.example.portativ"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "257631992316-9qeqvpmmv4ehv2fm82sja56dh3pvcjqe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.portativ",
+            "certificate_hash": "bc68de753924c97c490f907edaf0083d32efcc13"
+          }
+        },
+        {
+          "client_id": "257631992316-sc4sccorbvvlfhpdenh3fqpc0usu4lak.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyClgdUQsXQijGZWTk1gX__5YxKyoTpaJdk"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "257631992316-sc4sccorbvvlfhpdenh3fqpc0usu4lak.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "257631992316-81825ne5nt92d6m4c53dmbt8a2f1lcfb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.portativ"
+              }
+            }
+          ]
         }
       }
     }
