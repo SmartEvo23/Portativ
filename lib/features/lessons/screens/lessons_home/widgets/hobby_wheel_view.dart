@@ -24,9 +24,7 @@ class _HobbyWheelViewState extends State<HobbyWheelView> with SingleTickerProvid
   late final AnimationController _rotationController =
       AnimationController(vsync: this, duration: const Duration(seconds: 50))..repeat();
 
-  static const double _wheelSize = 360;
-  static const double _radius = 112;
-  static const double _nodeSize = 86;
+  static const double _minRadius = 112;
 
   @override
   void dispose() {
@@ -38,6 +36,14 @@ class _HobbyWheelViewState extends State<HobbyWheelView> with SingleTickerProvid
   Widget build(BuildContext context) {
     final lessons = LessonsData.byLevel(LessonLevel.hobby);
     final progressController = Get.put(ProgressController());
+    final n = lessons.length;
+
+    // Mărimea nodurilor și raza cercului se adaptează la numărul de lecții,
+    // astfel încât insulele să nu se suprapună pe măsură ce adăugăm conținut.
+    final nodeSize = n <= 6 ? 86.0 : (n <= 10 ? 74.0 : 62.0);
+    final requiredRadius = n < 2 ? _minRadius : (nodeSize + 14) / (2 * math.sin(math.pi / n));
+    final radius = math.max(_minRadius, requiredRadius);
+    final wheelSize = 2 * (radius + nodeSize / 2 + 24);
 
     return Obx(() {
       final progress = progressController.progress.value.of(LessonLevel.hobby);
@@ -56,8 +62,8 @@ class _HobbyWheelViewState extends State<HobbyWheelView> with SingleTickerProvid
           child: Column(
             children: [
               SizedBox(
-                width: _wheelSize,
-                height: _wheelSize,
+                width: wheelSize,
+                height: wheelSize,
                 child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
@@ -66,7 +72,7 @@ class _HobbyWheelViewState extends State<HobbyWheelView> with SingleTickerProvid
                       animation: _rotationController,
                       builder: (context, child) =>
                           Transform.rotate(angle: _rotationController.value * 2 * math.pi, child: child),
-                      child: CustomPaint(size: const Size(_wheelSize, _wheelSize), painter: _RingsPainter()),
+                      child: CustomPaint(size: Size(wheelSize, wheelSize), painter: _RingsPainter()),
                     ),
                     Container(
                       width: 92,
@@ -84,8 +90,8 @@ class _HobbyWheelViewState extends State<HobbyWheelView> with SingleTickerProvid
                         angle: (2 * math.pi * i / lessons.length) - (math.pi / 2),
                         lesson: lessons[i],
                         passed: progress.isLessonPassed(lessons[i].id),
-                        radius: _radius,
-                        size: _nodeSize,
+                        radius: radius,
+                        size: nodeSize,
                       ),
                   ],
                 ),

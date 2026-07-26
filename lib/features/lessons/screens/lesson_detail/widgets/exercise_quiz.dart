@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../../common/widgets/effects/confetti_burst.dart';
 import '../../../../../common/widgets/music/staff_widget.dart';
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
@@ -54,12 +55,35 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
   void _finish() => widget.onFinished(List<bool>.from(_correctness));
 
   void _showSummary() {
+    final perfect = _score == widget.exercises.length;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Gata!'),
-        content: Text('Ai răspuns corect la $_score din ${widget.exercises.length} exerciții.'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (perfect) const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.emoji_events_rounded, color: Colors.amber)),
+            Text(perfect ? 'Perfect!' : 'Gata!'),
+          ],
+        ),
+        content: SizedBox(
+          width: 220,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              if (perfect) const ConfettiBurst(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: TSizes.sm),
+                child: Text(
+                  'Ai răspuns corect la $_score din ${widget.exercises.length} exerciții.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {

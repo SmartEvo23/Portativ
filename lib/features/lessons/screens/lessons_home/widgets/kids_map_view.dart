@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../common/widgets/music/mascot_widget.dart';
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../../../utils/popups/loaders.dart';
@@ -12,6 +13,7 @@ import '../../../models/lesson_level.dart';
 import '../../../models/lesson_model.dart';
 import '../../../utils/lesson_unlock.dart';
 import '../../lesson_detail/lesson_detail_screen.dart';
+import 'world_intro_dialog.dart';
 
 /// Harta de lecții pentru "Copii": o cărare colorată și șerpuită, cu opriri
 /// (lecțiile), deblocate pe rând, în stilul hărților din jocurile de tip
@@ -28,7 +30,7 @@ class _KidsMapViewState extends State<KidsMapView> with SingleTickerProviderStat
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
 
   static const double _nodeSpacing = 170;
-  static const double _topPadding = 70;
+  static const double _topPadding = 150;
   static const double _bottomPadding = 120;
   static const double _nodeDiameter = 80;
   static const double _labelWidth = 130;
@@ -74,6 +76,29 @@ class _KidsMapViewState extends State<KidsMapView> with SingleTickerProviderStat
                   children: [
                     Positioned.fill(child: CustomPaint(painter: _CloudsPainter())),
                     CustomPaint(size: Size(width, mapHeight), painter: _PathPainter(positions: positions)),
+                    Positioned(
+                      left: width / 2 - 90,
+                      top: 6,
+                      width: 180,
+                      child: Column(
+                        children: [
+                          const MascotWidget(size: 76),
+                          const SizedBox(height: TSizes.xs),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: TSizes.sm, vertical: TSizes.xs),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(TSizes.borderRadiusLg),
+                            ),
+                            child: Text(
+                              'Hai să pornim în aventură!',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.labelSmall!.apply(color: TColors.textPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     for (var i = 0; i < lessons.length; i++)
                       Positioned(
                         left: positions[i].dx - _labelWidth / 2,
@@ -156,7 +181,11 @@ class _MapNode extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: unlocked
-              ? () => Get.to(() => LessonDetailScreen(lessonId: lesson.id))
+              ? () => showWorldIntroIfNeeded(
+                    context,
+                    lesson.module,
+                    () => Get.to(() => LessonDetailScreen(lessonId: lesson.id)),
+                  )
               : () => TLoaders.warningSnackBar(title: 'Lecție blocată', message: 'Termină mai întâi lecția anterioară.'),
           child: circle,
         ),
