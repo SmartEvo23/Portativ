@@ -23,7 +23,7 @@ class SettingsScreen extends StatelessWidget {
     return PopScope(
       canPop: false,
       // Intercept the back button press and redirect to Home Screen
-      onPopInvoked: (value) async => Get.offAll(const HomeMenu()),
+      onPopInvokedWithResult: (didPop, result) async => Get.offAll(const HomeMenu()),
       child: Scaffold(
         body: SingleChildScrollView(
           child: Column(
@@ -48,7 +48,7 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// -- Account  Settings
+                    /// -- Account Settings
                     const TSectionHeading(title: 'Setări Cont', showActionButton: false),
                     const SizedBox(height: TSizes.spaceBtwItems),
                     TSettingsMenuTile(
@@ -57,56 +57,6 @@ class SettingsScreen extends StatelessWidget {
                       subTitle: 'Setează adresa ta',
                       onTap: () => Get.to(() => const UserAddressScreen()),
                     ),
-                    /*TSettingsMenuTile(
-                      icon: Iconsax.shopping_cart,
-                      title: 'My Cart',
-                      subTitle: 'Add, remove products and move to checkout',
-                      onTap: () => Get.to(() => const CartScreen()),
-                    ),*/
-                    /*TSettingsMenuTile(
-                      icon: Iconsax.bag_tick,
-                      title: 'My Orders',
-                      subTitle: 'In-progress and Completed Orders',
-                      onTap: () => Get.to(() => const OrderScreen()),
-                    ),*/
-                    const TSettingsMenuTile(
-                        icon: Iconsax.bank, title: 'Cont Bancar', subTitle: 'Retrageți soldul în contul bancar înregistrat'),
-                    //const TSettingsMenuTile(
-                        //icon: Iconsax.discount_shape, title: 'My Coupons', subTitle: 'List of all the discounted coupons'),
-                    TSettingsMenuTile(
-                        icon: Iconsax.notification, title: 'Notificații', subTitle: 'Setează orice fel de mesaj de notificare', onTap: () {}),
-                    const TSettingsMenuTile(
-                        icon: Iconsax.security_card, title: 'Confidențialitatea contului', subTitle: 'Gestionează utilizarea datelor și conturile conectate'),
-
-                    /// -- App Settings
-                    const SizedBox(height: TSizes.spaceBtwSections),
-                    const TSectionHeading(title: 'Setări Aplicație', showActionButton: false),
-                    const SizedBox(height: TSizes.spaceBtwItems),
-                    /*TSettingsMenuTile(
-                      icon: Iconsax.document_upload,
-                      title: 'Încărcare Date',
-                      subTitle: 'Upload Data to your Cloud Firebase',
-                      onTap: () => Get.to(() => const UploadDataScreen()),
-                    ),*/
-                    const SizedBox(height: TSizes.spaceBtwItems),
-                    TSettingsMenuTile(
-                      icon: Iconsax.location,
-                      title: 'Geolocalizare',
-                      subTitle: 'Setați recomandarea în funcție de locație',
-                      trailing: Switch(value: true, onChanged: (value) {}),
-                    ),
-                    /*TSettingsMenuTile(
-                      icon: Iconsax.security_user,
-                      title: 'Safe Mode',
-                      subTitle: 'Search result is safe for all ages',
-                      trailing: Switch(value: false, onChanged: (value) {}),
-                    ),*/
-                    /*TSettingsMenuTile(
-                      icon: Iconsax.image,
-                      title: 'HD Image Quality',
-                      subTitle: 'Set image quality to be seen',
-                      trailing: Switch(value: false, onChanged: (value) {}),
-                    ),*/
 
                     /// -- Logout Button
                     const SizedBox(height: TSizes.spaceBtwSections),

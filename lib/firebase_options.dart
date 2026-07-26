@@ -63,11 +63,10 @@ class DefaultFirebaseOptions {
     storageBucket: 'portativ-43e16.firebasestorage.app',
   );
 
-  // TODO: apiKey below is still the OLD project's key. Download the fresh
-  // GoogleService-Info.plist from Firebase console (Project settings > your
-  // Portativ iOS app) and paste the real API_KEY value here before building for iOS.
+  // Cheia reală, luată din GoogleService-Info.plist (aflat la rădăcina
+  // proiectului) - proiectul Firebase "portativ-43e16" este cel corect.
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA6zU32CNGYUun7RyEuc3g-azPjX9A9pD4',
+    apiKey: 'AIzaSyDW1nYo6MIhDX3BhOrE_XscpaHh9VRvTDA',
     appId: '1:257631992316:ios:854bf492b57d5ee0bcda79',
     messagingSenderId: '257631992316',
     projectId: 'portativ-43e16',
@@ -75,9 +74,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.portativ',
   );
 
-  // TODO: same as above - refresh apiKey from the downloaded GoogleService-Info.plist.
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyA6zU32CNGYUun7RyEuc3g-azPjX9A9pD4',
+    apiKey: 'AIzaSyDW1nYo6MIhDX3BhOrE_XscpaHh9VRvTDA',
     appId: '1:257631992316:ios:854bf492b57d5ee0bcda79',
     messagingSenderId: '257631992316',
     projectId: 'portativ-43e16',

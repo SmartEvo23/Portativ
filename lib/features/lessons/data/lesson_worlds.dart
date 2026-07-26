@@ -16,6 +16,7 @@ class LessonWorld {
     required this.companionVariant,
     required this.companionColor,
     this.companionInstrument = MascotInstrument.tambourine,
+    this.companionInstruments,
   });
 
   final LessonModule module;
@@ -27,7 +28,23 @@ class LessonWorld {
   /// Ce fel de mascote-companion locuiesc pe acest tărâm (muzicieni sau dansatori).
   final MascotVariant companionVariant;
   final Color companionColor;
+
+  /// Instrument implicit, folosit dacă [companionInstruments] nu e setat.
   final MascotInstrument companionInstrument;
+
+  /// Listă opțională de instrumente, pentru variație între cei doi
+  /// companioni ai unui tărâm (stânga/dreapta) - ex. în Orașul
+  /// Instrumentelor, un companion cântă la vioară, celălalt la tobă.
+  final List<MascotInstrument>? companionInstruments;
+
+  /// Instrumentul folosit de companionul de la poziția [index] (0 = stânga,
+  /// 1 = dreapta). Ciclează prin [companionInstruments] dacă e setat, altfel
+  /// folosește [companionInstrument] pentru toți companionii.
+  MascotInstrument instrumentFor(int index) {
+    final list = companionInstruments;
+    if (list == null || list.isEmpty) return companionInstrument;
+    return list[index % list.length];
+  }
 }
 
 /// Tărâmurile/lumile hărților de lecții, câte una pentru fiecare modul -
@@ -46,7 +63,7 @@ const List<LessonWorld> kKidsWorlds = [
     gradient: [Color(0xFFBFEAF5), Color(0xFFE3F8E1)],
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFF7FD8A6),
-    companionInstrument: MascotInstrument.bell,
+    companionInstruments: [MascotInstrument.bell, MascotInstrument.flute],
   ),
   LessonWorld(
     module: LessonModule.ritm,
@@ -69,7 +86,7 @@ const List<LessonWorld> kKidsWorlds = [
     gradient: [Color(0xFFD1C4E9), Color(0xFFB39DDB)],
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFFB39DDB),
-    companionInstrument: MascotInstrument.guitar,
+    companionInstruments: [MascotInstrument.violin, MascotInstrument.trumpet],
   ),
   LessonWorld(
     module: LessonModule.urecheMuzicala,
@@ -81,7 +98,7 @@ const List<LessonWorld> kKidsWorlds = [
     gradient: [Color(0xFFB2EBF2), Color(0xFF80DEEA)],
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFF4DD0E1),
-    companionInstrument: MascotInstrument.microphone,
+    companionInstruments: [MascotInstrument.microphone, MascotInstrument.drum],
   ),
   LessonWorld(
     module: LessonModule.armonie,
@@ -93,7 +110,7 @@ const List<LessonWorld> kKidsWorlds = [
     gradient: [Color(0xFFFFE082), Color(0xFFFFB300)],
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFFFFC107),
-    companionInstrument: MascotInstrument.tambourine,
+    companionInstruments: [MascotInstrument.piano, MascotInstrument.tambourine],
   ),
 ];
 

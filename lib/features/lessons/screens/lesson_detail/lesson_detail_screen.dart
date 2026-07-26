@@ -8,7 +8,6 @@ import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../controllers/progress_controller.dart';
 import '../../data/lessons_data.dart';
-import '../../models/exercise_model.dart';
 import '../../models/lesson_model.dart';
 import 'widgets/exercise_quiz.dart';
 

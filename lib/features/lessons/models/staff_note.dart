@@ -24,4 +24,28 @@ class TrebleClefNotes {
   };
 
   static String nameFor(int position) => positionToName[position] ?? '?';
+
+  /// Numele fișierului audio (literă + octavă, notație internațională - ex.
+  /// "A3", "C4") corespunzător poziției de pe portativ - folosit de
+  /// [NoteSoundService] ca să găsească clipul audio potrivit din
+  /// `assets/sounds/notes/`. Acoperă La3-La5 (pozițiile -4..10).
+  static const Map<int, String> positionToAudioFile = {
+    -4: 'A3',
+    -3: 'B3',
+    -2: 'C4',
+    -1: 'D4',
+    0: 'E4',
+    1: 'F4',
+    2: 'G4',
+    3: 'A4',
+    4: 'B4',
+    5: 'C5',
+    6: 'D5',
+    7: 'E5',
+    8: 'F5',
+    9: 'G5',
+    10: 'A5',
+  };
+
+  static String? audioFileFor(int position) => positionToAudioFile[position];
 }

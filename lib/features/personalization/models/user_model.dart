@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../utils/formatters/formatter.dart';
-import '../../shop/models/cart_model.dart';
 import 'address_model.dart';
 
 /// Model class representing user data.
@@ -14,7 +13,6 @@ class UserModel {
   final String email;
   String phoneNumber;
   String profilePicture;
-  final CartModel? cart;
   final List<AddressModel>? addresses;
 
   /// Constructor for UserModel.
@@ -26,7 +24,6 @@ class UserModel {
     required this.email,
     required this.phoneNumber,
     required this.profilePicture,
-    this.cart,
     this.addresses,
   });
 
