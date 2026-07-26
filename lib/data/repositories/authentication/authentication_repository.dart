@@ -9,6 +9,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../../features/authentication/screens/login/login.dart';
 import '../../../features/authentication/screens/onboarding/onboarding.dart';
 import '../../../features/authentication/screens/signup/verify_email.dart';
+import '../../../features/personalization/controllers/user_controller.dart';
 import '../../../home_menu.dart';
 import '../../../utils/exceptions/firebase_auth_exceptions.dart';
 import '../../../utils/exceptions/firebase_exceptions.dart';
@@ -52,6 +53,9 @@ class AuthenticationRepository extends GetxController {
       if (user.emailVerified) {
         // Initialize User Specific Storage
         await TLocalStorage.init(user.uid);
+        // Ne asigurăm că UserController e mereu înregistrat, chiar dacă utilizatorul
+        // e deja logat (sesiune persistată) și nu trece prin ecranul de Login.
+        if (!Get.isRegistered<UserController>()) Get.put(UserController(), permanent: true);
         Get.offAll(() => const HomeMenu());
       } else {
         Get.offAll(() => VerifyEmailScreen(email: getUserEmail));
