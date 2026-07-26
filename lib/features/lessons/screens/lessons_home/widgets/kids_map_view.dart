@@ -17,12 +17,13 @@ import '../../../utils/lesson_unlock.dart';
 import '../../lesson_detail/lesson_detail_screen.dart';
 import 'world_intro_dialog.dart';
 
-/// Harta de lecții pentru "Copii": o hartă de lume, împărțită pe tărâmuri
-/// tematice (câte unul per modul de lecții), fiecare locuit de mascote-
-/// companion care cântă sau dansează într-o buclă continuă. Personajul
-/// principal (exploratorul) pășește de la un nod la următorul de fiecare
-/// dată când copilul termină o lecție, ducând un steguleț pe care îl
-/// "plantează" la sosire.
+/// Harta de lecții pentru "Copii": o hartă de regat, împărțită pe tărâmuri
+/// tematice (câte unul per modul de lecții), fiecare locuit de omuleți-
+/// companion mascați care cântă la instrumente sau dansează într-o buclă
+/// continuă, cu chef. Personajul principal (exploratorul) pășește de la un
+/// nod la următorul de fiecare dată când copilul termină o lecție, ducând
+/// un steguleț pe care îl "plantează" la sosire. Harta se poate mări/
+/// micșora și derula liber cu InteractiveViewer.
 class KidsMapView extends StatefulWidget {
   const KidsMapView({super.key});
 
@@ -33,7 +34,18 @@ class KidsMapView extends StatefulWidget {
 class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin {
   late final AnimationController _walkController =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-  final ScrollController _scrollController = ScrollController();
+
+  final TransformationController _transformController = TransformationController();
+  late final AnimationController _panController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  )..addListener(() {
+      if (_panTween != null) {
+        _transformController.value = _panTween!.transform(Curves.easeInOut.transform(_panController.value));
+      }
+    });
+  Matrix4Tween? _panTween;
+  Size? _viewportSize;
 
   static const double _nodeSpacing = 170;
   static const double _topPadding = 150;
@@ -42,7 +54,7 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
   static const double _labelWidth = 130;
 
   final List<LessonModel> _lessons = LessonsData.byLevel(LessonLevel.copii);
-  late final List<_ModuleBand> _bands = _computeBands(_lessons);
+  late final List<ModuleBand> _bands = computeModuleBands(_lessons);
   List<Offset> _positions = [];
 
   int _explorerIndex = -1;
@@ -55,7 +67,8 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
   @override
   void dispose() {
     _walkController.dispose();
-    _scrollController.dispose();
+    _panController.dispose();
+    _transformController.dispose();
     super.dispose();
   }
 
@@ -66,6 +79,7 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
         _explorerIndex = frontierIndex.clamp(0, _positions.length - 1);
         _bubbleText = frontierIndex == 0 ? 'Hai să pornim în aventură!' : null;
       });
+      _panToIndex(_explorerIndex, animate: false);
       return;
     }
     if (frontierIndex != _explorerIndex && !_walking) {
@@ -82,7 +96,7 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
       _celebrate = false;
       _bubbleText = 'Bravo! Un pas mai aproape!';
     });
-    _scrollToIndex(to);
+    _panToIndex(to);
     await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
     await _walkController.forward(from: 0);
@@ -101,10 +115,19 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
     });
   }
 
-  void _scrollToIndex(int index) {
-    if (index >= _positions.length || !_scrollController.hasClients) return;
-    final target = (_positions[index].dy - 220).clamp(0.0, _scrollController.position.maxScrollExtent);
-    _scrollController.animateTo(target, duration: const Duration(milliseconds: 550), curve: Curves.easeInOut);
+  void _panToIndex(int index, {bool animate = true}) {
+    if (index >= _positions.length || _viewportSize == null) return;
+    final target = _positions[index];
+    final scale = _transformController.value.getMaxScaleOnAxis();
+    final matrix = Matrix4.identity()
+      ..translate(_viewportSize!.width / 2 - target.dx * scale, _viewportSize!.height / 2 - target.dy * scale)
+      ..scale(scale);
+    if (!animate) {
+      _transformController.value = matrix;
+      return;
+    }
+    _panTween = Matrix4Tween(begin: _transformController.value, end: matrix);
+    _panController.forward(from: 0);
   }
 
   Offset _explorerPos() {
@@ -119,12 +142,6 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
     return base.translate(0, hop);
   }
 
-  static double _bandTop(int index, List<Offset> positions) =>
-      index == 0 ? 0 : (positions[index - 1].dy + positions[index].dy) / 2;
-
-  static double _bandBottom(int index, List<Offset> positions, double mapHeight) =>
-      index == positions.length - 1 ? mapHeight : (positions[index].dy + positions[index + 1].dy) / 2;
-
   @override
   Widget build(BuildContext context) {
     final progressController = Get.put(ProgressController());
@@ -137,32 +154,38 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
 
       WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAdvance(frontierIndex));
 
-      return Container(
-        color: const Color(0xFFBFEAF5),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final positions = <Offset>[
-              for (var i = 0; i < _lessons.length; i++)
-                Offset((i.isEven ? 0.30 : 0.70) * width, _topPadding + i * _nodeSpacing),
-            ];
-            _positions = positions;
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          _viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+          final positions = <Offset>[
+            for (var i = 0; i < _lessons.length; i++)
+              Offset((i.isEven ? 0.30 : 0.70) * width, _topPadding + i * _nodeSpacing),
+          ];
+          _positions = positions;
 
-            return SingleChildScrollView(
-              controller: _scrollController,
+          return ClipRect(
+            child: InteractiveViewer(
+              transformationController: _transformController,
+              constrained: false,
+              minScale: 0.55,
+              maxScale: 2.2,
+              boundaryMargin: const EdgeInsets.symmetric(horizontal: 80, vertical: 220),
               child: SizedBox(
                 width: width,
                 height: mapHeight,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
+                    Positioned.fill(child: Container(color: const Color(0xFFBFEAF5))),
+
                     // --- Tărâmuri (benzi de teren colorate per modul) ---
                     for (final band in _bands)
                       Positioned(
                         left: 0,
                         right: 0,
-                        top: _bandTop(band.start, positions),
-                        height: _bandBottom(band.end, positions, mapHeight) - _bandTop(band.start, positions),
+                        top: bandTop(band.start, positions),
+                        height: bandBottom(band.end, positions, mapHeight) - bandTop(band.start, positions),
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -175,38 +198,22 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
                           ),
                         ),
                       ),
+
+                    // --- Decor de teren, specific fiecărui tărâm (mai bogat vizual) ---
+                    Positioned.fill(
+                      child: CustomPaint(painter: _TerrainDecorPainter(bands: _bands, positions: positions, mapHeight: mapHeight)),
+                    ),
                     Positioned.fill(child: CustomPaint(painter: _CloudsPainter())),
 
-                    // --- Mascote-companion, locuitorii fiecărui tărâm ---
-                    for (final band in _bands) ...[
-                      Positioned(
-                        left: 12,
-                        top: _bandTop(band.start, positions) +
-                            (_bandBottom(band.end, positions, mapHeight) - _bandTop(band.start, positions)) * 0.30,
-                        child: MascotWidget(
-                          size: 44,
-                          variant: worldForModule(band.module)?.companionVariant ?? MascotVariant.musician,
-                          color: worldForModule(band.module)?.companionColor ?? TColors.secondary,
-                        ),
-                      ),
-                      Positioned(
-                        right: 12,
-                        top: _bandTop(band.start, positions) +
-                            (_bandBottom(band.end, positions, mapHeight) - _bandTop(band.start, positions)) * 0.68,
-                        child: MascotWidget(
-                          size: 44,
-                          variant: worldForModule(band.module)?.companionVariant ?? MascotVariant.musician,
-                          color: worldForModule(band.module)?.companionColor ?? TColors.secondary,
-                        ),
-                      ),
-                    ],
+                    // --- Omuleți-companion, locuitorii fiecărui tărâm ---
+                    for (final band in _bands) ..._buildCompanions(band, positions, mapHeight, width),
 
                     CustomPaint(size: Size(width, mapHeight), painter: _PathPainter(positions: positions)),
 
                     // --- Etichete de tărâm ---
                     for (final band in _bands)
                       Positioned(
-                        top: _bandTop(band.start, positions) + 10,
+                        top: bandTop(band.start, positions) + 10,
                         left: 0,
                         right: 0,
                         child: Center(
@@ -284,33 +291,83 @@ class _KidsMapViewState extends State<KidsMapView> with TickerProviderStateMixin
                   ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
     });
   }
+
+  /// Construiește omuleții-companion ai unui tărâm: pereche de dansatori
+  /// mascați pentru tărâmul de ritm/dans, sau doi muzicieni (cu instrumentul
+  /// specific tărâmului) pentru celelalte.
+  List<Widget> _buildCompanions(ModuleBand band, List<Offset> positions, double mapHeight, double width) {
+    final world = worldForModule(band.module);
+    final variant = world?.companionVariant ?? MascotVariant.musician;
+    final instrument = world?.companionInstrument ?? MascotInstrument.tambourine;
+    final color = world?.companionColor ?? TColors.secondary;
+    final top = bandTop(band.start, positions);
+    final bandHeight = bandBottom(band.end, positions, mapHeight) - top;
+    final midY = top + bandHeight * 0.5;
+
+    if (variant == MascotVariant.dancer) {
+      // Pereche de dansatori, aproape unul de altul, ca și cum ar dansa împreună.
+      return [
+        Positioned(
+          left: width * 0.5 - 46,
+          top: midY,
+          child: MascotWidget(size: 46, variant: MascotVariant.dancer, color: color, masked: true),
+        ),
+        Positioned(
+          left: width * 0.5 + 4,
+          top: midY - 6,
+          child: MascotWidget(size: 46, variant: MascotVariant.dancer, color: color.withOpacity(0.85), masked: true),
+        ),
+      ];
+    }
+
+    return [
+      Positioned(
+        left: 12,
+        top: top + bandHeight * 0.30,
+        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color, masked: true),
+      ),
+      Positioned(
+        right: 12,
+        top: top + bandHeight * 0.68,
+        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color, masked: true),
+      ),
+    ];
+  }
 }
 
-class _ModuleBand {
-  const _ModuleBand(this.module, this.start, this.end);
+/// O bandă de teren (secțiune verticală a hărții) ocupată de un singur modul
+/// de lecții - folosită pentru a desena "tărâmurile" hărții și decorul lor.
+class ModuleBand {
+  const ModuleBand(this.module, this.start, this.end);
   final LessonModule module;
   final int start;
   final int end;
 }
 
-List<_ModuleBand> _computeBands(List<LessonModel> lessons) {
+List<ModuleBand> computeModuleBands(List<LessonModel> lessons) {
   if (lessons.isEmpty) return const [];
-  final bands = <_ModuleBand>[];
+  final bands = <ModuleBand>[];
   var start = 0;
   for (var i = 1; i <= lessons.length; i++) {
     if (i == lessons.length || lessons[i].module != lessons[start].module) {
-      bands.add(_ModuleBand(lessons[start].module, start, i - 1));
+      bands.add(ModuleBand(lessons[start].module, start, i - 1));
       start = i;
     }
   }
   return bands;
 }
+
+double bandTop(int index, List<Offset> positions) =>
+    index == 0 ? 0 : (positions[index - 1].dy + positions[index].dy) / 2;
+
+double bandBottom(int index, List<Offset> positions, double mapHeight) =>
+    index == positions.length - 1 ? mapHeight : (positions[index].dy + positions[index + 1].dy) / 2;
 
 class _MapNode extends StatelessWidget {
   const _MapNode({
@@ -473,4 +530,125 @@ class _CloudsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CloudsPainter oldDelegate) => false;
+}
+
+/// Decor de teren specific fiecărui tărâm (dealuri/copaci, munți, acoperișuri
+/// de oraș, stalactite de peșteră) - ca să semene cu o hartă de regat bogată,
+/// nu doar cu benzi de culoare simple.
+class _TerrainDecorPainter extends CustomPainter {
+  _TerrainDecorPainter({required this.bands, required this.positions, required this.mapHeight});
+
+  final List<ModuleBand> bands;
+  final List<Offset> positions;
+  final double mapHeight;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final band in bands) {
+      final top = bandTop(band.start, positions);
+      final bottom = bandBottom(band.end, positions, mapHeight);
+      final rect = Rect.fromLTRB(0, top, size.width, bottom);
+      switch (band.module) {
+        case LessonModule.teorieDeBaza:
+          _paintForest(canvas, rect);
+          break;
+        case LessonModule.ritm:
+          _paintMountains(canvas, rect);
+          break;
+        case LessonModule.instrumente:
+          _paintRooftops(canvas, rect);
+          break;
+        case LessonModule.urecheMuzicala:
+          _paintCave(canvas, rect);
+          break;
+        case LessonModule.armonie:
+          break;
+      }
+    }
+  }
+
+  void _paintForest(Canvas canvas, Rect rect) {
+    final trunkPaint = Paint()..color = const Color(0xFF8D6E4A).withOpacity(0.55);
+    final leafPaint = Paint()..color = const Color(0xFF4C9A6A).withOpacity(0.45);
+    final xs = [0.06, 0.92, 0.10, 0.88];
+    for (var i = 0; i < xs.length; i++) {
+      final cx = rect.left + rect.width * xs[i];
+      final cy = rect.top + rect.height * (0.15 + 0.28 * (i % 3));
+      if (cy > rect.bottom - 20) continue;
+      canvas.drawRect(Rect.fromCenter(center: Offset(cx, cy + 14), width: 5, height: 20), trunkPaint);
+      canvas.drawCircle(Offset(cx, cy), 16, leafPaint);
+      canvas.drawCircle(Offset(cx - 10, cy + 6), 12, leafPaint);
+      canvas.drawCircle(Offset(cx + 10, cy + 6), 12, leafPaint);
+    }
+  }
+
+  void _paintMountains(Canvas canvas, Rect rect) {
+    final paint = Paint()..color = const Color(0xFFB5651D).withOpacity(0.28);
+    final snowPaint = Paint()..color = Colors.white.withOpacity(0.55);
+    final baseY = rect.top + 46;
+    final peaks = [0.08, 0.28, 0.72, 0.92];
+    for (var i = 0; i < peaks.length; i++) {
+      final cx = rect.left + rect.width * peaks[i];
+      final h = 34.0 + (i.isEven ? 10 : 0);
+      final path = Path()
+        ..moveTo(cx - 30, baseY)
+        ..lineTo(cx, baseY - h)
+        ..lineTo(cx + 30, baseY)
+        ..close();
+      canvas.drawPath(path, paint);
+      final snow = Path()
+        ..moveTo(cx - 8, baseY - h + 12)
+        ..lineTo(cx, baseY - h)
+        ..lineTo(cx + 8, baseY - h + 12)
+        ..close();
+      canvas.drawPath(snow, snowPaint);
+    }
+  }
+
+  void _paintRooftops(Canvas canvas, Rect rect) {
+    final wallPaint = Paint()..color = const Color(0xFF7E57C2).withOpacity(0.30);
+    final roofPaint = Paint()..color = const Color(0xFF5E35B1).withOpacity(0.42);
+    final xs = [0.10, 0.30, 0.90, 0.70];
+    for (var i = 0; i < xs.length; i++) {
+      final cx = rect.left + rect.width * xs[i];
+      final cy = rect.top + rect.height * (0.20 + 0.24 * (i % 3)) + 10;
+      if (cy > rect.bottom - 30) continue;
+      canvas.drawRect(Rect.fromCenter(center: Offset(cx, cy + 14), width: 34, height: 26), wallPaint);
+      final roof = Path()
+        ..moveTo(cx - 20, cy + 2)
+        ..lineTo(cx, cy - 16)
+        ..lineTo(cx + 20, cy + 2)
+        ..close();
+      canvas.drawPath(roof, roofPaint);
+    }
+  }
+
+  void _paintCave(Canvas canvas, Rect rect) {
+    final paint = Paint()..color = const Color(0xFF00838F).withOpacity(0.30);
+    final tops = [0.05, 0.22, 0.40, 0.60, 0.78, 0.94];
+    for (var i = 0; i < tops.length; i++) {
+      final cx = rect.left + rect.width * tops[i];
+      final len = 18.0 + (i.isEven ? 10 : 0);
+      canvas.drawPath(
+        Path()
+          ..moveTo(cx - 8, rect.top)
+          ..lineTo(cx, rect.top + len)
+          ..lineTo(cx + 8, rect.top)
+          ..close(),
+        paint,
+      );
+    }
+    // ecouri - cercuri concentrice discrete
+    final echoPaint = Paint()
+      ..color = Colors.white.withOpacity(0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final echoCenter = Offset(rect.center.dx, rect.top + rect.height * 0.5);
+    for (final r in [18.0, 32.0, 46.0]) {
+      canvas.drawCircle(echoCenter, r, echoPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TerrainDecorPainter oldDelegate) => false;
 }

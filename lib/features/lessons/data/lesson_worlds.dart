@@ -15,6 +15,7 @@ class LessonWorld {
     required this.gradient,
     required this.companionVariant,
     required this.companionColor,
+    this.companionInstrument = MascotInstrument.tambourine,
   });
 
   final LessonModule module;
@@ -26,6 +27,7 @@ class LessonWorld {
   /// Ce fel de mascote-companion locuiesc pe acest tărâm (muzicieni sau dansatori).
   final MascotVariant companionVariant;
   final Color companionColor;
+  final MascotInstrument companionInstrument;
 }
 
 /// Lumile aventurii pentru categoria "Copii", câte una pentru fiecare modul.
@@ -40,14 +42,15 @@ const List<LessonWorld> kKidsWorlds = [
     gradient: [Color(0xFFBFEAF5), Color(0xFFE3F8E1)],
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFF7FD8A6),
+    companionInstrument: MascotInstrument.bell,
   ),
   LessonWorld(
     module: LessonModule.ritm,
     title: 'Muntele Ritmului',
     tagline: 'Bătăi, tobe și pași de dans',
     story:
-        'Ai urcat pe Muntele Ritmului! Aici locuitorii dansează vals întruna, pe ritmul stâncilor care bat toba. '
-        'Ascultă cu atenție, bate din palme și învață cum se numără timpii unei melodii.',
+        'Ai ajuns în Regatul Dansului, de pe Muntele Ritmului! Aici locuitorii mascați dansează în perechi, pe ritmul '
+        'unui vals lin. Ascultă cu atenție, bate din palme și învață cum se numără timpii unei melodii.',
     gradient: [Color(0xFFFFE0B2), Color(0xFFFFCC80)],
     companionVariant: MascotVariant.dancer,
     companionColor: Color(0xFFFFB74D),
@@ -62,17 +65,19 @@ const List<LessonWorld> kKidsWorlds = [
     gradient: [Color(0xFFD1C4E9), Color(0xFFB39DDB)],
     companionVariant: MascotVariant.musician,
     companionColor: Color(0xFFB39DDB),
+    companionInstrument: MascotInstrument.guitar,
   ),
   LessonWorld(
     module: LessonModule.urecheMuzicala,
     title: 'Peștera Ecourilor',
     tagline: 'Sunete înalte, joase, tari și încete',
     story:
-        'Ai intrat în Peștera Ecourilor! Aici ecourile dansează la nesfârșit pe pereți - unele înalte, unele joase, '
-        'unele tari, altele abia șoptite. Antrenează-ți urechea și descoperă secretele sunetului!',
+        'Ai intrat în Peștera Ecourilor! Aici locuitorii cântă la microfon și glasul lor se-ntoarce ca ecou de pe '
+        'pereți - unele sunete înalte, unele joase, unele tari, altele abia șoptite. Antrenează-ți urechea!',
     gradient: [Color(0xFFB2EBF2), Color(0xFF80DEEA)],
-    companionVariant: MascotVariant.dancer,
+    companionVariant: MascotVariant.musician,
     companionColor: Color(0xFF4DD0E1),
+    companionInstrument: MascotInstrument.microphone,
   ),
 ];
 

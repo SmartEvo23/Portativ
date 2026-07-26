@@ -7,27 +7,38 @@ import '../../../utils/constants/colors.dart';
 
 /// Tipuri de mascotă folosite pe hărțile de lecții:
 /// - [explorer]: personajul principal, care se plimbă pe hartă și duce steagul.
-/// - [musician]: mascotă-companion care ține un instrument și "cântă" în buclă.
-/// - [dancer]: mascotă-companion care se leagănă/dansează în buclă (ex. vals).
+/// - [musician]: mascotă-companion care ține un instrument și "cântă" în buclă, cu chef.
+/// - [dancer]: mascotă-companion mascată, care dansează (de obicei în pereche).
 enum MascotVariant { explorer, musician, dancer }
 
-/// Mascota aplicației: o notă muzicală prietenoasă, cu ochi și zâmbet,
-/// care clipește, salută din mână și se leagănă ușor - folosită ca ghid
-/// vizual (și, în variantele companion, ca "locuitor" al fiecărui tărâm)
-/// în hărțile de lecții.
+/// Instrumentul ținut de o mascotă-muzician.
+enum MascotInstrument { tambourine, guitar, bell, microphone }
+
+/// Un mic personaj-omuleț, prietenos și animat: cap, tors, brațe, picioare,
+/// ochi care clipesc, zâmbet larg. Poate purta o mască de bal mascat și poate
+/// ține/cânta la un instrument - folosit ca ghid (exploratorul) sau ca
+/// "locuitor" companion al fiecărui tărâm din hărțile de lecții.
 class MascotWidget extends StatefulWidget {
   const MascotWidget({
     super.key,
     this.size = 64,
     this.color = TColors.secondary,
     this.variant = MascotVariant.explorer,
+    this.instrument = MascotInstrument.tambourine,
+    this.masked = false,
     this.celebrate = false,
     this.carryingFlag = false,
   });
 
   final double size;
+
+  /// Culoarea costumului/hainelor personajului.
   final Color color;
   final MascotVariant variant;
+  final MascotInstrument instrument;
+
+  /// Poartă o mască de bal mascat (folosit pentru companionii tărâmurilor).
+  final bool masked;
 
   /// Când comută pe `true`, mascota face un salt/rotire scurtă de sărbătoare
   /// (folosit când se termină o lecție sau un tărâm întreg).
@@ -43,7 +54,13 @@ class MascotWidget extends StatefulWidget {
 class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMixin {
   late final AnimationController _bobController = AnimationController(
     vsync: this,
-    duration: Duration(milliseconds: widget.variant == MascotVariant.dancer ? 750 : 1400),
+    duration: Duration(
+      milliseconds: widget.variant == MascotVariant.dancer
+          ? 700
+          : widget.variant == MascotVariant.musician
+              ? 480
+              : 1400,
+    ),
   )..repeat(reverse: true);
 
   late final AnimationController _blinkController =
@@ -101,8 +118,8 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
       animation: Listenable.merge([_bobController, _celebrateController]),
       builder: (context, child) {
         final t = _bobController.value;
-        final bob = isDancer ? math.sin(t * math.pi) * 5 : -t * 6;
-        final sway = isDancer ? math.sin(t * 2 * math.pi) * 0.14 : 0.0;
+        final bob = isDancer ? math.sin(t * math.pi) * 6 : -t * 5;
+        final sway = isDancer ? math.sin(t * 2 * math.pi) * 0.16 : 0.0;
         final spin = widget.celebrate ? _celebrateController.value * 2 * math.pi : 0.0;
         final bump = math.sin(_celebrateController.value * math.pi) * 0.22;
         return Transform.translate(
@@ -118,6 +135,8 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
         painter: _MascotPainter(
           color: widget.color,
           variant: widget.variant,
+          instrument: widget.instrument,
+          masked: widget.masked,
           blink: _blinkController,
           armPhase: _bobController,
           carryingFlag: widget.carryingFlag,
@@ -131,6 +150,8 @@ class _MascotPainter extends CustomPainter {
   _MascotPainter({
     required this.color,
     required this.variant,
+    required this.instrument,
+    required this.masked,
     required this.blink,
     required this.armPhase,
     required this.carryingFlag,
@@ -138,133 +159,259 @@ class _MascotPainter extends CustomPainter {
 
   final Color color;
   final MascotVariant variant;
+  final MascotInstrument instrument;
+  final bool masked;
   final Animation<double> blink;
   final Animation<double> armPhase;
   final bool carryingFlag;
 
+  static const _skin = Color(0xFFFFD8B0);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final bodyRadius = size.width / 2;
-    final center = Offset(size.width / 2, size.height - bodyRadius);
+    final unit = size.width;
     final swing = math.sin(armPhase.value * 2 * math.pi);
 
-    // Codiță de notă (ca o antenă), cu steguleț decorativ (parte din "corp").
-    final stemPaint = Paint()
-      ..color = TColors.textPrimary
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final stemTop = Offset(center.dx + bodyRadius * 0.5, center.dy - bodyRadius * 1.6);
-    final stemBottom = Offset(center.dx + bodyRadius * 0.5, center.dy - bodyRadius * 0.55);
-    canvas.drawLine(stemBottom, stemTop, stemPaint);
+    final headR = unit * 0.30;
+    final headCenter = Offset(unit / 2, headR + unit * 0.06);
+    final legLength = unit * 0.34;
+    final torsoTop = headCenter.dy + headR - unit * 0.05;
+    final torsoBottom = size.height - legLength;
 
-    final flagPath = Path()
-      ..moveTo(stemTop.dx, stemTop.dy)
-      ..quadraticBezierTo(
-        stemTop.dx + bodyRadius * 0.9,
-        stemTop.dy + bodyRadius * 0.15,
-        stemTop.dx + bodyRadius * 0.1,
-        stemTop.dy + bodyRadius * 0.85,
+    // --- umbră ---
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(unit / 2, size.height - 2), width: unit * 0.6, height: unit * 0.12),
+      Paint()..color = Colors.black.withOpacity(0.12),
+    );
+
+    // --- picioare ---
+    final legPaint = Paint()..color = TColors.textPrimary.withOpacity(0.75);
+    for (final side in [-1, 1]) {
+      final legRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(unit / 2 + side * unit * 0.14, torsoBottom + legLength / 2),
+          width: unit * 0.14,
+          height: legLength,
+        ),
+        Radius.circular(unit * 0.06),
       );
-    canvas.drawPath(flagPath, stemPaint);
+      canvas.drawRRect(legRect, legPaint);
+    }
 
-    // Umbră + corp (cap rotund).
-    final shadowPaint = Paint()..color = Colors.black.withOpacity(0.15);
-    canvas.drawCircle(center + const Offset(0, 4), bodyRadius, shadowPaint);
-    final bodyPaint = Paint()..color = color;
-    canvas.drawCircle(center, bodyRadius, bodyPaint);
+    // --- tors (tunică) ---
+    final torsoPath = Path()
+      ..moveTo(unit / 2 - unit * 0.30, torsoTop)
+      ..lineTo(unit / 2 + unit * 0.30, torsoTop)
+      ..lineTo(unit / 2 + unit * 0.38, torsoBottom)
+      ..lineTo(unit / 2 - unit * 0.38, torsoBottom)
+      ..close();
+    canvas.drawPath(torsoPath, Paint()..color = color);
+    canvas.drawPath(
+      torsoPath,
+      Paint()
+        ..color = Colors.black.withOpacity(0.08)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4,
+    );
 
-    // --- Brațe ---
+    // --- brațe + recuzită (desenate înainte de cap, ca să iasă capul deasupra) ---
     final armPaint = Paint()
       ..color = TColors.textPrimary
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
+    final leftShoulder = Offset(unit / 2 - unit * 0.30, torsoTop + unit * 0.04);
+    final rightShoulder = Offset(unit / 2 + unit * 0.30, torsoTop + unit * 0.04);
+    _paintArmsAndProps(canvas, unit, leftShoulder, rightShoulder, armPaint, swing);
 
-    final leftShoulder = center + Offset(-bodyRadius * 0.82, bodyRadius * 0.15);
-    final rightShoulder = center + Offset(bodyRadius * 0.82, bodyRadius * 0.15);
+    // --- cap ---
+    canvas.drawCircle(headCenter + const Offset(0, 3), headR, Paint()..color = Colors.black.withOpacity(0.12));
+    canvas.drawCircle(headCenter, headR, Paint()..color = _skin);
 
-    if (variant == MascotVariant.dancer) {
-      // Brațe ridicate, poziție de dans - se leagănă opus una față de alta.
-      final leftHand = leftShoulder + Offset(-bodyRadius * 0.55, -bodyRadius * (0.55 + 0.1 * swing));
-      final rightHand = rightShoulder + Offset(bodyRadius * 0.55, -bodyRadius * (0.55 - 0.1 * swing));
-      canvas.drawLine(leftShoulder, leftHand, armPaint);
-      canvas.drawLine(rightShoulder, rightHand, armPaint);
-    } else if (variant == MascotVariant.musician) {
-      // Brațul stâng ține o mică tamburină, dreptul o "bate" ritmic.
-      final tambourineCenter = center + Offset(-bodyRadius * 1.05, bodyRadius * 0.05);
-      canvas.drawLine(leftShoulder, tambourineCenter, armPaint);
-      final tambPaint = Paint()
-        ..color = TColors.secondary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3;
-      canvas.drawCircle(tambourineCenter, bodyRadius * 0.32, tambPaint);
-      canvas.drawCircle(tambourineCenter, bodyRadius * 0.32, Paint()..color = TColors.secondary.withOpacity(0.25));
-      final rightHand = rightShoulder + Offset(bodyRadius * 0.15, -bodyRadius * (0.25 + 0.3 * swing.abs()));
-      canvas.drawLine(rightShoulder, rightHand, armPaint);
-    } else {
-      // Explorer: brațul stâng flutură a salut, dreptul duce eventual un steguleț.
-      final leftHand = leftShoulder + Offset(-bodyRadius * 0.5, -bodyRadius * (0.35 + 0.3 * swing.abs()));
-      canvas.drawLine(leftShoulder, leftHand, armPaint);
+    // păr/beretă simplă, în culoarea costumului, pentru coerență vizuală.
+    final hairPath = Path()
+      ..moveTo(headCenter.dx - headR, headCenter.dy - headR * 0.05)
+      ..quadraticBezierTo(headCenter.dx, headCenter.dy - headR * 1.5, headCenter.dx + headR, headCenter.dy - headR * 0.05)
+      ..quadraticBezierTo(headCenter.dx, headCenter.dy - headR * 0.72, headCenter.dx - headR, headCenter.dy - headR * 0.05)
+      ..close();
+    canvas.drawPath(hairPath, Paint()..color = color.withOpacity(0.9));
 
-      if (carryingFlag) {
-        final rightHand = rightShoulder + Offset(bodyRadius * 0.35, -bodyRadius * 0.15);
-        canvas.drawLine(rightShoulder, rightHand, armPaint);
-        final poleTop = rightHand - Offset(0, bodyRadius * 0.9);
-        canvas.drawLine(rightHand, poleTop, stemPaint);
-        final miniFlag = Path()
-          ..moveTo(poleTop.dx, poleTop.dy)
-          ..lineTo(poleTop.dx + bodyRadius * 0.55, poleTop.dy + bodyRadius * 0.18)
-          ..lineTo(poleTop.dx, poleTop.dy + bodyRadius * 0.36)
-          ..close();
-        canvas.drawPath(miniFlag, Paint()..color = Colors.redAccent);
-      } else {
-        final rightHand = rightShoulder + Offset(bodyRadius * 0.5, -bodyRadius * (0.35 - 0.3 * swing.abs()));
-        canvas.drawLine(rightShoulder, rightHand, armPaint);
-      }
-    }
-
-    // Obrăjori.
+    // obrăjori
     final blushPaint = Paint()..color = Colors.pink.withOpacity(0.35);
-    canvas.drawCircle(center + Offset(-bodyRadius * 0.55, bodyRadius * 0.18), bodyRadius * 0.14, blushPaint);
-    canvas.drawCircle(center + Offset(bodyRadius * 0.55, bodyRadius * 0.18), bodyRadius * 0.14, blushPaint);
+    canvas.drawCircle(headCenter + Offset(-headR * 0.5, headR * 0.22), headR * 0.15, blushPaint);
+    canvas.drawCircle(headCenter + Offset(headR * 0.5, headR * 0.22), headR * 0.15, blushPaint);
 
-    // Ochi (clipesc periodic).
+    // ochi (clipesc periodic)
     final eyeOpen = 1 - blink.value;
     final eyePaint = Paint()..color = TColors.textPrimary;
-    for (final dx in [-bodyRadius * 0.35, bodyRadius * 0.35]) {
-      final eyeCenter = center + Offset(dx, -bodyRadius * 0.1);
+    for (final dx in [-headR * 0.4, headR * 0.4]) {
+      final eyeCenter = headCenter + Offset(dx, 0);
       if (eyeOpen > 0.15) {
-        canvas.drawCircle(eyeCenter, bodyRadius * 0.12 * eyeOpen.clamp(0.4, 1.0), eyePaint);
+        canvas.drawCircle(eyeCenter, headR * 0.13 * eyeOpen.clamp(0.4, 1.0), eyePaint);
       } else {
-        // pleoapă închisă - o linie curbă
-        final lidPaint = Paint()
-          ..color = TColors.textPrimary
-          ..strokeWidth = 2
-          ..strokeCap = StrokeCap.round;
         canvas.drawLine(
-          eyeCenter + Offset(-bodyRadius * 0.1, 0),
-          eyeCenter + Offset(bodyRadius * 0.1, 0),
-          lidPaint,
+          eyeCenter + Offset(-headR * 0.12, 0),
+          eyeCenter + Offset(headR * 0.12, 0),
+          Paint()
+            ..color = TColors.textPrimary
+            ..strokeWidth = 2
+            ..strokeCap = StrokeCap.round,
         );
       }
     }
 
-    // Zâmbet larg, vesel (mai generos decât un zâmbet simplu).
+    // mască de bal mascat (companionii tărâmurilor).
+    if (masked) {
+      final maskPath = Path()
+        ..moveTo(headCenter.dx - headR * 0.85, headCenter.dy - headR * 0.08)
+        ..quadraticBezierTo(headCenter.dx, headCenter.dy - headR * 0.55, headCenter.dx + headR * 0.85, headCenter.dy - headR * 0.08)
+        ..quadraticBezierTo(headCenter.dx, headCenter.dy + headR * 0.28, headCenter.dx - headR * 0.85, headCenter.dy - headR * 0.08)
+        ..close();
+      canvas.drawPath(maskPath, Paint()..color = TColors.textPrimary.withOpacity(0.88));
+      for (final dx in [-headR * 0.4, headR * 0.4]) {
+        canvas.drawCircle(headCenter + Offset(dx, 0), headR * 0.16, Paint()..color = _skin);
+        canvas.drawCircle(headCenter + Offset(dx, 0), headR * 0.1, eyePaint);
+      }
+    }
+
+    // zâmbet
     final smilePaint = Paint()
       ..color = TColors.textPrimary
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
+      ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round;
-    final smileRect = Rect.fromCenter(
-      center: center + Offset(0, bodyRadius * 0.16),
-      width: bodyRadius * 0.9,
-      height: bodyRadius * 0.75,
-    );
+    final smileRect = Rect.fromCenter(center: headCenter + Offset(0, headR * 0.35), width: headR * 0.9, height: headR * 0.7);
     canvas.drawArc(smileRect, 0.15, math.pi - 0.3, false, smilePaint);
+  }
+
+  void _paintArmsAndProps(
+    Canvas canvas,
+    double unit,
+    Offset leftShoulder,
+    Offset rightShoulder,
+    Paint armPaint,
+    double swing,
+  ) {
+    if (variant == MascotVariant.dancer) {
+      final leftHand = leftShoulder + Offset(-unit * 0.28, -unit * (0.30 + 0.09 * swing));
+      final rightHand = rightShoulder + Offset(unit * 0.28, -unit * (0.30 - 0.09 * swing));
+      canvas.drawLine(leftShoulder, leftHand, armPaint);
+      canvas.drawLine(rightShoulder, rightHand, armPaint);
+      return;
+    }
+
+    if (variant == MascotVariant.musician) {
+      switch (instrument) {
+        case MascotInstrument.guitar:
+          final bodyCenter = Offset(unit / 2, leftShoulder.dy + unit * 0.30);
+          canvas.drawLine(leftShoulder, bodyCenter + Offset(-unit * 0.05, -unit * 0.05), armPaint);
+          canvas.drawOval(
+            Rect.fromCenter(center: bodyCenter, width: unit * 0.30, height: unit * 0.40),
+            Paint()..color = const Color(0xFF8D5A2B),
+          );
+          canvas.drawCircle(bodyCenter, unit * 0.055, Paint()..color = const Color(0xFF5C3A1B));
+          final neckTop = bodyCenter + Offset(unit * 0.22, -unit * 0.42);
+          canvas.drawLine(
+            bodyCenter + Offset(unit * 0.10, -unit * 0.14),
+            neckTop,
+            Paint()
+              ..color = const Color(0xFF5C3A1B)
+              ..strokeWidth = unit * 0.045
+              ..strokeCap = StrokeCap.round,
+          );
+          final rightHand = bodyCenter + Offset(-unit * 0.02, -unit * (0.02 + 0.10 * swing.abs()));
+          canvas.drawLine(rightShoulder, rightHand, armPaint);
+          break;
+
+        case MascotInstrument.bell:
+          final triCenter = leftShoulder + Offset(-unit * 0.24, unit * 0.10);
+          canvas.drawLine(leftShoulder, triCenter, armPaint);
+          final s = unit * 0.16;
+          final tri = Path()
+            ..moveTo(triCenter.dx, triCenter.dy - s)
+            ..lineTo(triCenter.dx + s, triCenter.dy + s * 0.6)
+            ..lineTo(triCenter.dx - s, triCenter.dy + s * 0.6)
+            ..close();
+          canvas.drawPath(
+            tri,
+            Paint()
+              ..color = const Color(0xFFB0BEC5)
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = unit * 0.035
+              ..strokeCap = StrokeCap.round,
+          );
+          final stickEnd = triCenter + Offset(unit * 0.12 * swing, -unit * 0.02);
+          canvas.drawLine(rightShoulder, stickEnd, armPaint);
+          break;
+
+        case MascotInstrument.microphone:
+          final micHand = rightShoulder + Offset(unit * 0.06, -unit * 0.30);
+          canvas.drawLine(rightShoulder, micHand, armPaint);
+          canvas.drawLine(
+            micHand,
+            micHand + Offset(0, -unit * 0.14),
+            Paint()
+              ..color = TColors.darkGrey
+              ..strokeWidth = unit * 0.03
+              ..strokeCap = StrokeCap.round,
+          );
+          canvas.drawCircle(micHand + Offset(0, -unit * 0.19), unit * 0.07, Paint()..color = TColors.darkerGrey);
+          final leftHand = leftShoulder + Offset(-unit * 0.20, -unit * (0.20 + 0.14 * swing.abs()));
+          canvas.drawLine(leftShoulder, leftHand, armPaint);
+          break;
+
+        case MascotInstrument.tambourine:
+          final tambourineCenter = leftShoulder + Offset(-unit * 0.30, unit * 0.02);
+          canvas.drawLine(leftShoulder, tambourineCenter, armPaint);
+          canvas.drawCircle(
+            tambourineCenter,
+            unit * 0.16,
+            Paint()
+              ..color = TColors.secondary
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = unit * 0.045,
+          );
+          canvas.drawCircle(tambourineCenter, unit * 0.16, Paint()..color = TColors.secondary.withOpacity(0.25));
+          final rightHand = rightShoulder + Offset(unit * 0.10, -unit * (0.14 + 0.16 * swing.abs()));
+          canvas.drawLine(rightShoulder, rightHand, armPaint);
+          break;
+      }
+      return;
+    }
+
+    // explorer
+    final leftHand = leftShoulder + Offset(-unit * 0.26, -unit * (0.18 + 0.16 * swing.abs()));
+    canvas.drawLine(leftShoulder, leftHand, armPaint);
+
+    if (carryingFlag) {
+      final rightHand = rightShoulder + Offset(unit * 0.20, -unit * 0.08);
+      canvas.drawLine(rightShoulder, rightHand, armPaint);
+      final poleTop = rightHand - Offset(0, unit * 0.46);
+      canvas.drawLine(
+        rightHand,
+        poleTop,
+        Paint()
+          ..color = TColors.textPrimary
+          ..strokeWidth = unit * 0.035
+          ..strokeCap = StrokeCap.round,
+      );
+      final miniFlag = Path()
+        ..moveTo(poleTop.dx, poleTop.dy)
+        ..lineTo(poleTop.dx + unit * 0.26, poleTop.dy + unit * 0.09)
+        ..lineTo(poleTop.dx, poleTop.dy + unit * 0.18)
+        ..close();
+      canvas.drawPath(miniFlag, Paint()..color = Colors.redAccent);
+    } else {
+      final rightHand = rightShoulder + Offset(unit * 0.26, -unit * (0.18 - 0.16 * swing.abs()));
+      canvas.drawLine(rightShoulder, rightHand, armPaint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant _MascotPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.variant != variant || oldDelegate.carryingFlag != carryingFlag;
+      oldDelegate.color != color ||
+      oldDelegate.variant != variant ||
+      oldDelegate.instrument != instrument ||
+      oldDelegate.masked != masked ||
+      oldDelegate.carryingFlag != carryingFlag;
 }
