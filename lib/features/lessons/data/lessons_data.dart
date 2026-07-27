@@ -712,6 +712,15 @@ class LessonsData {
             ExerciseOption(text: 'Niciuna', isCorrect: false),
           ],
         ),
+        ExerciseModel(
+          question: 'Ascultă cele două sunete. Al doilea sunet e mai înalt sau mai jos decât primul?',
+          soundCue: SoundCue([CuedNote(-2), CuedNote(8)]),
+          options: [
+            ExerciseOption(text: 'Mai înalt', isCorrect: true),
+            ExerciseOption(text: 'Mai jos', isCorrect: false),
+            ExerciseOption(text: 'La fel', isCorrect: false),
+          ],
+        ),
       ],
     ),
     LessonModel(
@@ -740,6 +749,15 @@ class LessonsData {
             ExerciseOption(text: 'Crescendo', isCorrect: true),
             ExerciseOption(text: 'Portativ', isCorrect: false),
             ExerciseOption(text: 'Sincopă', isCorrect: false),
+          ],
+        ),
+        ExerciseModel(
+          question: 'Ascultă. Al doilea sunet e cântat mai tare sau mai încet decât primul?',
+          soundCue: SoundCue([CuedNote(0), CuedNote(0, volume: 0.22)]),
+          options: [
+            ExerciseOption(text: 'Mai tare', isCorrect: false),
+            ExerciseOption(text: 'Mai încet', isCorrect: true),
+            ExerciseOption(text: 'La fel', isCorrect: false),
           ],
         ),
       ],
@@ -780,6 +798,15 @@ class LessonsData {
             ExerciseOption(text: 'Nu contează', isCorrect: false),
           ],
         ),
+        ExerciseModel(
+          question: 'Ascultă intervalul. Ce interval tocmai ai auzit?',
+          soundCue: SoundCue([CuedNote(-2), CuedNote(2)]),
+          options: [
+            ExerciseOption(text: 'Cvintă', isCorrect: true),
+            ExerciseOption(text: 'Secundă', isCorrect: false),
+            ExerciseOption(text: 'Octavă', isCorrect: false),
+          ],
+        ),
       ],
     ),
     LessonModel(
@@ -810,6 +837,17 @@ class LessonsData {
             ExerciseOption(text: 'Prima', isCorrect: false),
           ],
         ),
+        ExerciseModel(
+          question: 'Ascultă gama. Sună majoră sau minoră?',
+          soundCue: SoundCue(
+            [CuedNote(-2), CuedNote(-1), CuedNote(0), CuedNote(1), CuedNote(2), CuedNote(3), CuedNote(4), CuedNote(5)],
+            gapMs: 260,
+          ),
+          options: [
+            ExerciseOption(text: 'Majoră', isCorrect: true),
+            ExerciseOption(text: 'Minoră', isCorrect: false),
+          ],
+        ),
       ],
     ),
     LessonModel(
@@ -837,6 +875,17 @@ class LessonsData {
             ExerciseOption(text: 'Mică', isCorrect: false),
             ExerciseOption(text: 'Mare', isCorrect: true),
             ExerciseOption(text: 'Nu contează', isCorrect: false),
+          ],
+        ),
+        ExerciseModel(
+          question: 'Ascultă gama. Sună majoră sau minoră?',
+          soundCue: SoundCue(
+            [CuedNote(-4), CuedNote(-3), CuedNote(-2), CuedNote(-1), CuedNote(0), CuedNote(1), CuedNote(2), CuedNote(3)],
+            gapMs: 260,
+          ),
+          options: [
+            ExerciseOption(text: 'Majoră', isCorrect: false),
+            ExerciseOption(text: 'Minoră', isCorrect: true),
           ],
         ),
       ],

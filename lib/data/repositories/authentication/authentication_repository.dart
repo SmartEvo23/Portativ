@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -166,13 +165,18 @@ class AuthenticationRepository extends GetxController {
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
+      // Utilizatorul a închis fereastra de selectare a contului Google -
+      // nu e o eroare, doar renunță la autentificare (nu aruncăm nimic, ca
+      // să nu vadă un mesaj de eroare pentru o simplă anulare).
+      if (googleUser == null) return null;
+
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth?.accessToken,
-        idToken: googleAuth?.idToken,
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
       // Once signed in, return the UserCredential
@@ -184,10 +188,20 @@ class AuthenticationRepository extends GetxController {
     } on FormatException catch (_) {
       throw const TFormatException();
     } on PlatformException catch (e) {
+      // "ApiException: 10" (DEVELOPER_ERROR) e aproape mereu semn că
+      // amprenta SHA-1 a cheii cu care e semnat APK-ul nu e înregistrată
+      // în proiectul Firebase - autentificarea Google eșuează mereu în
+      // acest caz, indiferent de contul ales.
+      if (e.code == 'sign_in_failed' && (e.message ?? '').contains('ApiException: 10')) {
+        throw 'Autentificarea Google nu e configurată pentru acest build (amprenta SHA-1 a cheii lipsește din Firebase). '
+            'Cere-i lui Edvard să adauge amprenta SHA-1 a cheii de semnare în consola Firebase.';
+      }
       throw TPlatformException(e.code).message;
     } catch (e) {
-      if (kDebugMode) print('Something went wrong: $e');
-      return null;
+      // Nu mai înghițim eroarea silențios (nu mai întoarcem null) - altfel
+      // ecranul de login te "aruncă înapoi" fără nicio explicație. Acum
+      // mesajul real ajunge în snackbar-ul de eroare de la ecranul de login.
+      throw 'Autentificarea cu Google a eșuat: $e';
     }
   }
 

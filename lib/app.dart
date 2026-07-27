@@ -14,9 +14,12 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: TTexts.appName,
-      themeMode: ThemeMode.system,
+      // Aplicația rămâne mereu pe tema deschisă (albă), indiferent de modul
+      // întunecat/luminos setat pe telefon - se potrivește mai bine cu
+      // ilustrațiile și culorile aplicației.
+      themeMode: ThemeMode.light,
       theme: TAppTheme.lightTheme,
-      darkTheme: TAppTheme.lightTheme,
+      darkTheme: TAppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
       initialBinding: GeneralBindings(),
       getPages: AppRoutes.pages,

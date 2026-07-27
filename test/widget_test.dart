@@ -3,20 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:portativ/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('App pornește și afișează loader-ul inițial fără să crape', (WidgetTester tester) async {
+    // Testul implicit generat de Flutter (contor "+") nu are nicio legătură cu
+    // Portativ - aplicația nu are un contor. Verificăm doar că App() se
+    // construiește fără erori și arată loader-ul afișat înainte ca
+    // AuthenticationRepository să decidă spre ce ecran navighează.
     await tester.pumpWidget(const App());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 }

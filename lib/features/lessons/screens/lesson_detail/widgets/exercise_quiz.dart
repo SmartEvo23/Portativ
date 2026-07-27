@@ -6,6 +6,7 @@ import '../../../../../common/widgets/music/staff_widget.dart';
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../models/exercise_model.dart';
+import '../../../utils/note_sound_service.dart';
 
 /// Derulează o listă de exerciții grilă, unul câte unul, cu feedback imediat
 /// și un scor final. Poate fi reutilizat atât în interiorul unei lecții, cât
@@ -29,7 +30,31 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
   int? _selectedOption;
   final List<bool> _correctness = [];
 
+  /// Indexul ultimului exercițiu pentru care s-a redat automat secvența audio
+  /// - ca să nu reînceapă sunetul de fiecare dată când widgetul se reconstruiește
+  /// (ex. la selectarea unui răspuns).
+  int? _autoPlayedIndex;
+
   ExerciseModel get _current => widget.exercises[_index];
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeAutoPlayCue();
+  }
+
+  @override
+  void dispose() {
+    NoteSoundService.instance.stop();
+    super.dispose();
+  }
+
+  void _maybeAutoPlayCue() {
+    final cue = _current.soundCue;
+    if (cue == null || _autoPlayedIndex == _index) return;
+    _autoPlayedIndex = _index;
+    WidgetsBinding.instance.addPostFrameCallback((_) => NoteSoundService.instance.playCue(cue));
+  }
 
   void _selectOption(int optionIndex) {
     if (_selectedOption != null) return;
@@ -50,6 +75,7 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
       _index++;
       _selectedOption = null;
     });
+    _maybeAutoPlayCue();
   }
 
   void _finish() => widget.onFinished(List<bool>.from(_correctness));
@@ -117,6 +143,25 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
           const SizedBox(height: TSizes.spaceBtwItems),
           if (exercise.notePosition != null) ...[
             StaffWidget(notePositions: [exercise.notePosition!], height: 140),
+            const SizedBox(height: TSizes.xs),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => NoteSoundService.instance.playPosition(exercise.notePosition!),
+                icon: const Icon(Iconsax.volume_high),
+                label: const Text('Ascultă nota'),
+              ),
+            ),
+            const SizedBox(height: TSizes.spaceBtwItems),
+          ],
+          if (exercise.soundCue != null) ...[
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: () => NoteSoundService.instance.playCue(exercise.soundCue!),
+                icon: const Icon(Iconsax.volume_high),
+                label: Text(_autoPlayedIndex == _index ? 'Reascultă' : 'Ascultă'),
+              ),
+            ),
             const SizedBox(height: TSizes.spaceBtwItems),
           ],
           Text(exercise.question, style: Theme.of(context).textTheme.headlineSmall),
@@ -145,7 +190,7 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
                     padding: const EdgeInsets.all(TSizes.md),
                     decoration: BoxDecoration(
                       color: backgroundColor,
-                      border: Border.all(color: borderColor!),
+                      border: Border.all(color: borderColor),
                       borderRadius: BorderRadius.circular(TSizes.borderRadiusMd),
                     ),
                     child: Row(

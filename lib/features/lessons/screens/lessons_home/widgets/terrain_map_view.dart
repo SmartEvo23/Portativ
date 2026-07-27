@@ -164,7 +164,6 @@ class _TerrainMapViewState extends State<TerrainMapView> with TickerProviderStat
     if (!widget.showCompanions) return const [];
     final world = worldForModule(band.module);
     final variant = world?.companionVariant ?? MascotVariant.musician;
-    final instrument = world?.companionInstrument ?? MascotInstrument.tambourine;
     final color = world?.companionColor ?? TColors.secondary;
     final top = bandTop(band.start, positions);
     final bandHeight = bandBottom(band.end, positions, mapHeight) - top;
@@ -189,12 +188,22 @@ class _TerrainMapViewState extends State<TerrainMapView> with TickerProviderStat
       Positioned(
         left: 12,
         top: top + bandHeight * 0.30,
-        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color),
+        child: MascotWidget(
+          size: 46,
+          variant: variant,
+          instrument: world?.instrumentFor(0) ?? MascotInstrument.tambourine,
+          color: color,
+        ),
       ),
       Positioned(
         right: 12,
         top: top + bandHeight * 0.68,
-        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color),
+        child: MascotWidget(
+          size: 46,
+          variant: variant,
+          instrument: world?.instrumentFor(1) ?? MascotInstrument.tambourine,
+          color: color.withOpacity(0.92),
+        ),
       ),
     ];
   }
