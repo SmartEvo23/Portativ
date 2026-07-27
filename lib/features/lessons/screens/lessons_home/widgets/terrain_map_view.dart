@@ -175,12 +175,12 @@ class _TerrainMapViewState extends State<TerrainMapView> with TickerProviderStat
         Positioned(
           left: width * 0.5 - 46,
           top: midY,
-          child: MascotWidget(size: 46, variant: MascotVariant.dancer, color: color, masked: true),
+          child: MascotWidget(size: 46, variant: MascotVariant.dancer, color: color),
         ),
         Positioned(
           left: width * 0.5 + 4,
           top: midY - 6,
-          child: MascotWidget(size: 46, variant: MascotVariant.dancer, color: color.withOpacity(0.85), masked: true),
+          child: MascotWidget(size: 46, variant: MascotVariant.dancer, color: color.withOpacity(0.85)),
         ),
       ];
     }
@@ -189,12 +189,12 @@ class _TerrainMapViewState extends State<TerrainMapView> with TickerProviderStat
       Positioned(
         left: 12,
         top: top + bandHeight * 0.30,
-        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color, masked: true),
+        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color),
       ),
       Positioned(
         right: 12,
         top: top + bandHeight * 0.68,
-        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color, masked: true),
+        child: MascotWidget(size: 46, variant: variant, instrument: instrument, color: color),
       ),
     ];
   }
