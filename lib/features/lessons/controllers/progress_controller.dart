@@ -44,10 +44,9 @@ class ProgressController extends GetxController {
   void markLessonCompleted(LessonLevel level, String lessonId) {
     final already = progress.value.of(level).completedLessonIds.contains(lessonId);
     if (already) return;
-    progress.value = progress.value.updateLevel(
-      level,
-      (lp) => lp.copyWith(completedLessonIds: {...lp.completedLessonIds, lessonId}),
-    );
+    progress.value = progress.value
+        .updateLevel(level, (lp) => lp.copyWith(completedLessonIds: {...lp.completedLessonIds, lessonId}))
+        .withActivityToday();
     _persist();
   }
 
@@ -62,7 +61,7 @@ class ProgressController extends GetxController {
         bestScores: improved ? {...lp.bestScores, lessonId: correct} : lp.bestScores,
         totalExercises: {...lp.totalExercises, lessonId: total},
       );
-    });
+    }).withActivityToday();
     _persist();
   }
 
@@ -70,10 +69,9 @@ class ProgressController extends GetxController {
   /// a fiecărui exercițiu răspuns corect.
   void recordPracticeResult(LessonLevel level, int correctCount) {
     if (correctCount <= 0) return;
-    progress.value = progress.value.updateLevel(
-      level,
-      (lp) => lp.copyWith(practicePoints: lp.practicePoints + correctCount * LevelProgress.pointsPerPracticeAnswer),
-    );
+    progress.value = progress.value
+        .updateLevel(level, (lp) => lp.copyWith(practicePoints: lp.practicePoints + correctCount * LevelProgress.pointsPerPracticeAnswer))
+        .withActivityToday();
     _persist();
   }
 }

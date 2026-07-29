@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../common/widgets/custom_shapes/containers/primary_header_container.dart';
+import '../../../../common/widgets/effects/bounce_tap.dart';
 import '../../../../common/widgets/music/staff_widget.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
@@ -36,19 +37,32 @@ class LessonsDashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (userController == null)
-                        Text('Salut!', style: Theme.of(context).textTheme.headlineMedium!.apply(color: TColors.white))
-                      else
-                        Obx(() {
-                          final name = userController.user.value.firstName;
-                          return Text(
-                            name.isEmpty ? 'Salut!' : 'Salut, $name!',
-                            style: Theme.of(context).textTheme.headlineMedium!.apply(color: TColors.white),
-                          );
-                        }),
-                      const SizedBox(height: TSizes.xs),
-                      Text('Hai să învățăm puțină muzică astăzi',
-                          style: Theme.of(context).textTheme.bodyMedium!.apply(color: TColors.white)),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (userController == null)
+                                  Text('Salut!', style: Theme.of(context).textTheme.headlineMedium!.apply(color: TColors.white))
+                                else
+                                  Obx(() {
+                                    final name = userController.user.value.firstName;
+                                    return Text(
+                                      name.isEmpty ? 'Salut!' : 'Salut, $name!',
+                                      style: Theme.of(context).textTheme.headlineMedium!.apply(color: TColors.white),
+                                    );
+                                  }),
+                                const SizedBox(height: TSizes.xs),
+                                Text('Hai să învățăm puțină muzică astăzi',
+                                    style: Theme.of(context).textTheme.bodyMedium!.apply(color: TColors.white)),
+                              ],
+                            ),
+                          ),
+                          Obx(() => _StreakBadge(streak: progressController.progress.value.currentStreak)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -93,6 +107,50 @@ class LessonsDashboardScreen extends StatelessWidget {
   }
 }
 
+/// Insignă cu "streak"-ul zilnic (zile consecutive de activitate), afișată
+/// în header-ul ecranului Acasă - inspirată din Duolingo: o flacără care se
+/// aprinde (culoare vie) doar când streak-ul e activ, cu un mic "pop" de
+/// animație de fiecare dată când numărul crește.
+class _StreakBadge extends StatelessWidget {
+  const _StreakBadge({required this.streak});
+
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = streak > 0;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(streak),
+      tween: Tween(begin: 0.7, end: 1.0),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.elasticOut,
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: TSizes.sm, vertical: TSizes.xs),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_fire_department_rounded,
+              color: active ? const Color(0xFFFFA726) : Colors.white.withOpacity(0.5),
+              size: TSizes.iconMd,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$streak',
+              style: Theme.of(context).textTheme.titleMedium!.apply(color: TColors.white, fontWeightDelta: 2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CategoryProgressCard extends StatelessWidget {
   const _CategoryProgressCard({required this.level, required this.progress});
 
@@ -115,7 +173,7 @@ class _CategoryProgressCard extends StatelessWidget {
     final lessons = LessonsData.byLevel(level);
     final rank = ProgressRank.forPoints(progress.points);
 
-    return InkWell(
+    return BounceTap(
       borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
       onTap: () => Get.to(() => LessonsHomeScreen(initialLevel: level)),
       child: Container(
@@ -211,7 +269,7 @@ class _PracticeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return BounceTap(
       borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
       onTap: () => Get.to(() => const PracticeScreen()),
       child: Container(

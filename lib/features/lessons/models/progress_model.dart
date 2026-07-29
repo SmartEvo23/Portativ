@@ -81,11 +81,22 @@ class LevelProgress {
 }
 
 /// Progresul complet al utilizatorului, câte o intrare [LevelProgress]
-/// independentă pentru fiecare categorie din [LessonLevel].
+/// independentă pentru fiecare categorie din [LessonLevel], plus un "streak"
+/// global (zile consecutive în care a exersat ceva) - nu e legat de o
+/// singură categorie, e o măsură simplă de obișnuință zilnică.
 class ProgressModel {
-  const ProgressModel(this.byLevel);
+  const ProgressModel(this.byLevel, {this.currentStreak = 0, this.lastActiveDate});
 
   final Map<LessonLevel, LevelProgress> byLevel;
+
+  /// Numărul de zile consecutive în care utilizatorul a finalizat cel puțin
+  /// o acțiune de progres (lecție citită, test trecut sau exercițiu corect).
+  final int currentStreak;
+
+  /// Ultima zi (format `yyyy-MM-dd`, calendar local) în care s-a înregistrat
+  /// activitate - folosită doar ca să calculăm dacă streak-ul continuă, se
+  /// resetează sau rămâne neschimbat (mai multe acțiuni în aceeași zi).
+  final String? lastActiveDate;
 
   LevelProgress of(LessonLevel level) => byLevel[level] ?? const LevelProgress();
 
@@ -93,18 +104,45 @@ class ProgressModel {
 
   factory ProgressModel.fromJson(Map<String, dynamic>? json) {
     if (json == null) return ProgressModel.empty();
-    return ProgressModel({
-      for (final level in LessonLevel.values) level: LevelProgress.fromJson(json[level.name] as Map<String, dynamic>?),
-    });
+    return ProgressModel(
+      {for (final level in LessonLevel.values) level: LevelProgress.fromJson(json[level.name] as Map<String, dynamic>?)},
+      currentStreak: (json['streak'] as num?)?.toInt() ?? 0,
+      lastActiveDate: json['lastActiveDate'] as String?,
+    );
   }
 
-  Map<String, dynamic> toJson() => {for (final level in LessonLevel.values) level.name: of(level).toJson()};
+  Map<String, dynamic> toJson() => {
+        for (final level in LessonLevel.values) level.name: of(level).toJson(),
+        'streak': currentStreak,
+        'lastActiveDate': lastActiveDate,
+      };
+
+  static String _dateKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   /// Întoarce o copie a progresului, cu categoria [level] înlocuită prin [update].
   ProgressModel updateLevel(LessonLevel level, LevelProgress Function(LevelProgress current) update) {
     final next = Map<LessonLevel, LevelProgress>.from(byLevel);
     next[level] = update(of(level));
-    return ProgressModel(next);
+    return ProgressModel(next, currentStreak: currentStreak, lastActiveDate: lastActiveDate);
+  }
+
+  /// Înregistrează activitate "azi" - de apelat de fiecare dată când
+  /// utilizatorul finalizează ceva (lecție, test, exercițiu corect).
+  /// - dacă e deja înregistrată activitate azi, nu schimbă nimic.
+  /// - dacă ultima activitate a fost ieri, streak-ul crește cu 1.
+  /// - altfel (prima activitate sau a fost o pauză mai mare), streak-ul repornește de la 1.
+  ProgressModel withActivityToday({DateTime? now}) {
+    final today = _dateKey(now ?? DateTime.now());
+    if (lastActiveDate == today) return this;
+
+    final yesterday = _dateKey((now ?? DateTime.now()).subtract(const Duration(days: 1)));
+    final continuesStreak = lastActiveDate == yesterday;
+    return ProgressModel(
+      byLevel,
+      currentStreak: continuesStreak ? currentStreak + 1 : 1,
+      lastActiveDate: today,
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../../common/widgets/effects/bounce_tap.dart';
 import '../../../../../common/widgets/effects/confetti_burst.dart';
 import '../../../../../common/widgets/music/staff_widget.dart';
 import '../../../../../utils/constants/colors.dart';
@@ -58,12 +59,20 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
 
   void _selectOption(int optionIndex) {
     if (_selectedOption != null) return;
+    final isCorrect = _current.options[optionIndex].isCorrect;
     setState(() {
       _selectedOption = optionIndex;
-      final isCorrect = _current.options[optionIndex].isCorrect;
       if (isCorrect) _score++;
       _correctness.add(isCorrect);
     });
+    // Reacție sonoră imediată - un "ding" vesel la corect, un semnal scurt și
+    // blând la greșit (nu descurajator), la fel ca în aplicațiile gamificate
+    // de exersat un instrument.
+    if (isCorrect) {
+      NoteSoundService.instance.playCorrect();
+    } else {
+      NoteSoundService.instance.playWrong();
+    }
   }
 
   void _next() {
@@ -82,6 +91,7 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
 
   void _showSummary() {
     final perfect = _score == widget.exercises.length;
+    if (perfect) NoteSoundService.instance.playLevelUp();
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -183,9 +193,9 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
                     borderColor = TColors.error;
                   }
                 }
-                return InkWell(
+                return BounceTap(
                   borderRadius: BorderRadius.circular(TSizes.borderRadiusMd),
-                  onTap: () => _selectOption(i),
+                  onTap: answered ? null : () => _selectOption(i),
                   child: Container(
                     padding: const EdgeInsets.all(TSizes.md),
                     decoration: BoxDecoration(
@@ -207,12 +217,21 @@ class _ExerciseQuizState extends State<ExerciseQuiz> {
             ),
           ),
           if (answered)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _next,
-                style: ElevatedButton.styleFrom(backgroundColor: TColors.primary, foregroundColor: TColors.white),
-                child: Text(_index == widget.exercises.length - 1 ? 'Termină' : 'Continuă'),
+            BounceTap(
+              onTap: _next,
+              borderRadius: BorderRadius.circular(TSizes.borderRadiusMd),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: TSizes.md),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: TColors.primary,
+                  borderRadius: BorderRadius.circular(TSizes.borderRadiusMd),
+                ),
+                child: Text(
+                  _index == widget.exercises.length - 1 ? 'Termină' : 'Continuă',
+                  style: Theme.of(context).textTheme.titleMedium!.apply(color: TColors.white),
+                ),
               ),
             ),
         ],

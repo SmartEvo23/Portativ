@@ -75,6 +75,7 @@ flutter:
     - assets/images/mascots/
     - assets/sounds/Piano.sf2
     - assets/sounds/notes/
+    - assets/sounds/sfx/
 
   #--------------- LOCAL FONTS ------------------#
   fonts:

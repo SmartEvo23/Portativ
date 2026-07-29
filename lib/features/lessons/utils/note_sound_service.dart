@@ -39,7 +39,35 @@ class NoteSoundService {
     }
   }
 
+  /// Player separat pentru efecte scurte de reacţie (corect/greşit/nivel nou),
+  /// ca să poată suna chiar dacă o notă e deja în curs de redare pe player-ul
+  /// principal (nu vrem ca un răspuns rapid să taie sunetul notei ascultate).
+  final AudioPlayer _sfxPlayer = AudioPlayer();
+
+  Future<void> _playSfx(String fileName, {double volume = 0.85}) async {
+    try {
+      await _sfxPlayer.stop();
+      await _sfxPlayer.setVolume(volume);
+      await _sfxPlayer.play(AssetSource('sounds/sfx/$fileName.wav'));
+    } catch (_) {
+      // La fel ca la notele obişnuite - un eşec de redare nu blochează exerciţiul.
+    }
+  }
+
+  /// Răspuns corect - clinchet vesel, ascendent.
+  Future<void> playCorrect() => _playSfx('sfx_correct');
+
+  /// Răspuns greşit - sunet scurt, blând, fără conotaţie de "eroare gravă"
+  /// (copiii nu trebuie descurajaţi de un semnal dur).
+  Future<void> playWrong() => _playSfx('sfx_wrong', volume: 0.7);
+
+  /// Nivel nou / lecţie/tărâm finalizat - fanfară scurtă, cu puţină strălucire.
+  Future<void> playLevelUp() => _playSfx('sfx_levelup');
+
   Future<void> stop() => _player.stop();
 
-  void dispose() => _player.dispose();
+  void dispose() {
+    _player.dispose();
+    _sfxPlayer.dispose();
+  }
 }
